@@ -1,0 +1,21 @@
+---
+title: "About"
+author: "Meyappan"
+
+output: html_document
+---
+
+HOWDY! (Gig'EM to all the Aggies out there)
+
+I have always had difficulty filling out my March Madness bracket. There is so much data to look at, but it is not always in the same place. This year, I took upon a mini project upon myself (inspired by some work by Rodrigo Zamith). This application should provide you with a plethora of data to compare teams head to head in the tournament. 
+
+I have a couple of suggestions on how to go about using the application.
+
+There are a few tabs in this program. The first tab will show data (team or individual) in a table format. The second tab will show you comparision plots of the teams you have picked. 
+
+First select the teams of interest. Following that pick the team or individual stat. Then follow it with the type of plot (i.e Variation,Time,Comparative, or Percentile).  
+*  Variation plots give you Box and Whisker plots.  
+*  Time plots show you how the team did over the course of the season.  
+*  Comparitive plots will compare the selected team with opponent average, national average and the tournament average for the selected stat. 
+
+Then feel free to select the state of interest. I hope this helps. If you have any suggestions, feel free to leave comments on my github (https://github.com/meysubb). The code for this project should be up shortly (April 3rd). 

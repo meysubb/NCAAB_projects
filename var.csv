@@ -1,0 +1,51 @@
+Var,Names
+three_fgpct,3-PT %
+three_fga,3-FGA
+three_fgm,3-FGM
+ast,AST
+blk,BLK
+fgpct,FG %
+fga,FGA
+fgm,FGM
+fouls,Fouls
+ftpct,FT %
+fta,FTA
+ft,FTM
+pts,PTS
+defreb,Reb (Def)
+offreb,Reb (Off)
+stl,STL
+totreb,Reb (TOT)
+to,TO
+ptsavg,PPG
+rebavg,Reb (Avg)
+losses,Losses
+away_losses,Away Losses
+home_losses,Home Losses
+winpct,Win %
+away_wins,Away Wins
+home_wins,Home Wins
+wins,Wins
+avg_ptsdiff,Pt-Diff (Avg)
+forward_avg_height,Avg F/C Height
+guard_avg_height,Avg G Height
+guard_points,G Points %
+forward_points,F Points %
+away_avg_ptsdiff,Pt-Diff Away (Avg)
+home_avg_ptsdiff,Pt-Diff Home (Avg)
+ast_to,AST/TO 
+played,GP
+started,GS
+team_name,Team
+player_name,Name
+astavg,APG
+team_ptsavg,PPG
+team_rebavg,Reb (Avg)
+team_fgpct,FG %
+opp_team_fgpct,OPP FG%
+team_three_fgpct,3-PT %
+opp_team_three_fgpct,OPP 3-PT %
+team_ftpct,FT %
+opp_team_ftpct,OPP FT %
+opp_team_ptsavg,OPP PPG
+opp_team_rebavg,OPP Reb (Avg)
