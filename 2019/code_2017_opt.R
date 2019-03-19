@@ -1,3 +1,6 @@
+library(lubridate)
+library(dplyr)
+
 source("funcs.R")  
 options(stringsAsFactors = FALSE)
 options(digits=8)
@@ -6,7 +9,7 @@ year_id <- "14300"
 ### Focusing on Optimization 
 
 ## Aggregate Player Data
-agg.player <- read.csv(file="raw_data/summary_player_data.tsv", sep="\t", header=TRUE, na.strings="?",stringsAsFactors = F)
+agg.player <- read.csv(file="scraped_data/summary_player_data.tsv", sep="\t", header=TRUE, na.strings="?",stringsAsFactors = F)
 start.time <- Sys.time()
 ## Change Team and Player Name to Characters
 char_cols <- c("player_name","team_name")
@@ -24,7 +27,7 @@ agg.player <- agg.player[,-11]
 agg.player <- agg.player %>% 
   mutate(
     mins = ms(minutes),
-    minutes = as.numeric(minute(mins)*60 + seconds(mins)),
+    minutes = as.numeric(mins)/60,
     played = as.numeric(played),
     astavg = ast/played,
     ast_to = ifelse(to==0,0,ast/to)
@@ -35,7 +38,7 @@ agg.player[is.na(agg.player)] <- 0
 
 # Load aggregate team data
 # Remove strings as factors
-agg.team <- read.csv(file="raw_data/summary_team_data.tsv", sep="\t", header=TRUE, na.strings="?",stringsAsFactors = FALSE)
+agg.team <- read.csv(file="scraped_data/summary_team_data.tsv", sep="\t", header=TRUE, na.strings="?",stringsAsFactors = FALSE)
 
 agg.team$opp_trips <- 0
 colnames(agg.team)[4:49] <- colnames(agg.team)[3:48]
@@ -45,7 +48,7 @@ agg.team <- agg.team[,-3]
 agg.team <- agg.team %>% mutate(
   team_name = as.character(team_name),
   mins = ms(team_minutes),
-  team_minutes = as.numeric(minute(mins)*60 + seconds(mins)),
+  team_minutes = as.numeric(mins)/60,
   opp_mins = ms(opp_team_minutes),
   opp_team_minutes = as.numeric(minute(opp_mins)*60 + seconds(opp_mins))
 ) %>% select(-mins,-opp_mins)
@@ -59,35 +62,56 @@ agg.team$team_id <- rownames(agg.team)
 
 # Load Individual Game Data
 ind.game <- read.csv(file="scraped_data/game_data.tsv", sep="\t", header=TRUE, row.names=1, na.strings="?",stringsAsFactors = FALSE)
-ind.game$game_date <- as.Date(ind.game$game_date, format='%m/%d/%Y')
+ind.game$temp <- 0
+colnames(ind.game)[5:19] <- colnames(ind.game)[4:18]
+colnames(ind.game)[23:37] <- colnames(ind.game)[22:36]
+ind.game <- ind.game[,-c(4,22)]
+
+
 ## Change Team Names to Characters
 char_cols <- c("home_team_name","away_team_name")
 ind.game[char_cols] <- lapply(ind.game[char_cols], as.character)
 ## Make minutes numeric 
-ind.game$home_team_minutes <- time_to_mins(ind.game,"home_team_minutes")
-ind.game$away_team_minutes <-  time_to_mins(ind.game,"away_team_minutes")
-## Remove the "/team" and year id from the team ids
-ind.game$home_team_id <- create_team_id(ind.game$home_team_id,year_id)
-ind.game$away_team_id <- create_team_id(ind.game$away_team_id,year_id)
-ind.game$game_id <- rownames(ind.game)
+ind.game <- ind.game %>% mutate(
+  game_date = as.Date(game_date,format='%m/%d/%Y'),
+  home_mins = ms(home_team_minutes),
+  home_team_minutes = as.numeric(home_mins)/60,
+  away_mins = ms(away_team_minutes),
+  awaay_team_minutes = as.numeric(away_mins)/60,
+  home_team_id = create_team_id(home_team_id,year_id),
+  away_team_id = create_team_id(away_team_id,year_id)
+) %>% select(-home_mins,-away_mins) %>% rownames_to_column(var='game_id')
+
 
 # Load Individual Player Data
 ind.player <- read.csv(file="scraped_data/player_data.tsv", sep="\t", header=TRUE, row.names=NULL, na.strings="?")
+colnames(ind.player)[8:22]  <- colnames(ind.player)[7:21] 
+ind.player <- ind.player[,-7]
+
 ## Change Team and Player Name to Characters
 char_cols <- c("player_name","team_name")
 ind.player[char_cols] <- lapply(ind.player[char_cols], as.character)
 ## Add factors for position
-ind.player$pos <- factor(ind.player$pos, c("G", "F", "C"))
-## convert time to numeric, and date to proper format. 
-ind.player$minutes <-  time_to_mins(ind.player,"minutes")
-ind.player$game_date <- as.Date(ind.player$game_date, format='%m/%d/%Y')
-ind.player$team_id <- create_team_id(ind.player$team_id,"12260")
+ind.player <- ind.player %>% mutate(
+  pos = factor(pos, c("G", "F", "C")),
+  mins = ms(minutes),
+  minutes = as.numeric(mins)/60,
+  game_date = as.Date(game_date,format='%m/%d/%Y'),
+  team_id = create_team_id(team_id,year_id)
+) %>% select(-mins)
+
 
 # Load Individual Team Data
 ind.team <- read.csv(file="scraped_data/team_data.tsv", sep="\t", header=TRUE, row.names=NULL, na.strings="?")
-ind.team$team_name <- as.character(ind.team$team_name)
-ind.team$game_date <- as.Date(ind.team$game_date, format='%m/%d/%Y')
-ind.team$team_minutes <-  time_to_mins(ind.team,"team_minutes")
+colnames(ind.team)[7:21] <- colnames(ind.team)[6:20]
+ind.team <- ind.team[,-6]
+
+ind.team <- ind.team %>% mutate(
+  team_name = as.character(team_name),
+  game_date = as.Date(game_date,format = '%m/%d/%Y'),
+  team_minutes = as.numeric(ms(team_minutes))/60
+)
+
 if(colnames(ind.team)[11] == "team_ft"){
   colnames(ind.team)[11] = "team_ftm"
 }
@@ -127,7 +151,7 @@ ind.game <- ind.game %>% mutate(
 
 
 ##### Create a list with our basic stats
-basicgamestats <- c("fgm", "fga", "three_fgm", "three_fga", "ft", "fta", "pts", "ptsavg", "offreb", "defreb", "totreb", "rebavg", "ast", "to", "stl", "blk", "fouls", "dbldbl", "trpdbl","fgpct", "three_fgpct", "ftpct")
+basicgamestats <- c("fgm", "fga", "three_fgm", "three_fga", "ft", "fta", "pts", "ptsavg", "offreb", "defreb", "totreb", "rebavg", "ast", "to", "stl", "blk", "dbldbl", "trpdbl","fgpct", "three_fgpct", "ftpct")
 basicgamestats_team <- basicgamestats
 
 ## Add Player Fouls to AGG player DF. 
@@ -212,7 +236,7 @@ progress <- function(n) setTxtProgressBar(pb, n)
 opts <- list(progress = progress)
 
 
-away_var_list <- foreach(i=1:31,.combine=data.frame, .packages = "dplyr",.options.snow = opts) %dopar% {
+away_var_list <- foreach(i=1:30,.combine=data.frame, .packages = "dplyr",.options.snow = opts) %dopar% {
   gen_var_name <- home_away_vars_to_populate[i]
   #away_command <- away_vars[i]
   sapply(seq(1:length(ind.game$game_date)),function(x){
@@ -224,12 +248,12 @@ away_var_list <- foreach(i=1:31,.combine=data.frame, .packages = "dplyr",.option
 }
 close(pb)
 
-pb <- txtProgressBar(max = 31, style = 3)
+pb <- txtProgressBar(max = 30, style = 3)
 progress <- function(n) setTxtProgressBar(pb, n)
 opts <- list(progress = progress)
 
 
-home_var_list <- foreach(i=1:31,.combine=data.frame, .packages = "dplyr",.options.snow = opts) %dopar% {
+home_var_list <- foreach(i=1:30,.combine=data.frame, .packages = "dplyr",.options.snow = opts) %dopar% {
   gen_var_name <- home_away_vars_to_populate[i]
   #away_command <- away_vars[i]
   sapply(seq(1:length(ind.game$game_date)),function(x){
@@ -257,17 +281,18 @@ rm(pb)
 # First, the away team
 vec_team_away <- ind.game %>% select(team_id = away_team_id,team_name = away_team_name,game_id,game_date,neutral_site,opp_team_id = home_team_id,opp_team_name = home_team_name)
 vec_team_away$home <- 0
-basicgamestats_team_2 <- basicgamestats_team[1:25]
+basicgamestats_team_2 <- basicgamestats_team[1:24]
 away_names <- reshape_team_lvl_data(ind.game,basicgamestats_team_2,"team_","away_team_")
 opp_names <- reshape_team_lvl_data(ind.game,basicgamestats_team_2,"opp_","home_team_")
 away_sea_names <- reshape_team_lvl_data(ind.game,basicgamestats_team,"team_season_","away_season_team_")
 opp_sea_names <- reshape_team_lvl_data(ind.game,basicgamestats_team,"opp_season_","home_season_team_")
 
-away <- inner_join(away_names,away_sea_names)
-opp <- inner_join(opp_names,opp_sea_names)
-away_opp.game <- inner_join(away,opp,by="game_id")
-vec_team_away <- inner_join(vec_team_away,away_opp.game,by="game_id")
+away <- inner_join(away_names,away_sea_names,by=c("team_game_id"="game_id"))
+opp <- inner_join(opp_names,opp_sea_names,by=c("opp_game_id"="game_id"))
+away_opp.game <- inner_join(away,opp,by=c("team_game_id"="opp_game_id"))
+vec_team_away <- inner_join(vec_team_away,away_opp.game,by=c("game_id"="team_game_id"))
 vec_team_away$ptsdiff <- -1 * ind.game$ptsdiff
+
 
 vec_team_home <- ind.game %>% select(team_id = home_team_id,team_name = home_team_name,game_id,game_date,neutral_site,opp_team_id = away_team_id,opp_team_name = away_team_name)
 vec_team_home$home <- 1
@@ -276,10 +301,10 @@ opp_names <- reshape_team_lvl_data(ind.game,basicgamestats_team_2,"opp_","away_t
 home_sea_names <- reshape_team_lvl_data(ind.game,basicgamestats_team,"team_season_","home_season_team_")
 opp_sea_names <- reshape_team_lvl_data(ind.game,basicgamestats_team,"opp_season_","away_season_team_")
 
-home <- inner_join(home_names,home_sea_names)
-opp <- inner_join(opp_names,opp_sea_names)
-home_opp.game <- inner_join(home,opp,by="game_id")
-vec_team_home <- inner_join(vec_team_home,home_opp.game,by="game_id")
+home <- inner_join(home_names,home_sea_names,by=c("team_game_id"="game_id"))
+opp <- inner_join(opp_names,opp_sea_names,by=c("opp_game_id"="game_id"))
+home_opp.game <- inner_join(home,opp,by=c("team_game_id" = "opp_game_id"))
+vec_team_home <- inner_join(vec_team_home,home_opp.game,by=c("game_id"="team_game_id"))
 vec_team_home$ptsdiff <- ind.game$ptsdiff
 
 ind.team <- rbind(vec_team_away,vec_team_home)
@@ -293,8 +318,8 @@ rm(list = ls(pattern = "\\away"))
 # Ensure column names are set properly 
 # .x -> home team
 # .y -> opp team
-colnames(ind.team)[45:50] <- gsub("\\b.x","",colnames(ind.team)[45:50]) 
-colnames(ind.team)[87:92] <- paste0("opp_",gsub("\\b.y","",colnames(ind.team)[87:92]))
+colnames(ind.team)[45:48] <- gsub("\\b.x","",colnames(ind.team)[45:48]) 
+colnames(ind.team)[87:88] <- paste0("opp_",gsub("\\b.y","",colnames(ind.team)[87:88]))
 
 ## Look for opponent stats
 home_agg_team_stats <- ind.team %>% group_by(team_id,opp_team_id) %>% filter(home == 1) %>% 
@@ -336,7 +361,7 @@ rm(list = ls(pattern = "agg_team_stats"))
 
 
 ## Prepare away opponent  data to be appended to ind.game from agg.team
-sel_cols <- c("team_id",colnames(agg.team)[66:74])
+sel_cols <- c("team_id",colnames(agg.team)[67:75])
 opp_away <- agg.team %>% select_(.dots=sel_cols) 
 opp_home <- opp_away
 colnames(opp_away)[2:10] <- paste0("away_season_",colnames(opp_away)[2:10])
@@ -358,3 +383,7 @@ saveRDS(ind.team,file="ind_team.RDS")
 ## Save ind.player 
 saveRDS(ind.player,file="ind_player.RDS")
 
+write.csv(agg.team,"raw_data/agg_team.csv")
+write.csv(agg.player,"raw_data/agg_player.csv")
+write.csv(ind.team,"raw_data/ind_team.csv")
+write.csv(ind.player,"raw_data/ind_player.csv")
