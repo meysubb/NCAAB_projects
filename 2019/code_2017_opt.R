@@ -58,7 +58,7 @@ com_cols <- names(which(apply(agg.team, 2, function(x) any(grepl(",", x)))))
 agg.team[com_cols] <- apply(agg.team[com_cols], 2, function(x) as.numeric(gsub(",", "", x)))
 agg.team$team_ast_to <- agg.team$team_ast/agg.team$team_to
 agg.team[is.na(agg.team)] <- 0 
-agg.team$team_id <- rownames(agg.team)
+
 
 # Load Individual Game Data
 ind.game <- read.csv(file="scraped_data/game_data.tsv", sep="\t", header=TRUE, row.names=1, na.strings="?",stringsAsFactors = FALSE)
@@ -154,13 +154,6 @@ ind.game <- ind.game %>% mutate(
 basicgamestats <- c("fgm", "fga", "three_fgm", "three_fga", "ft", "fta", "pts", "ptsavg", "offreb", "defreb", "totreb", "rebavg", "ast", "to", "stl", "blk", "dbldbl", "trpdbl","fgpct", "three_fgpct", "ftpct")
 basicgamestats_team <- basicgamestats
 
-## Add Player Fouls to AGG player DF. 
-
-ind.player_sep <- ind.player %>%  group_by(player_name)  %>% summarise(PF = sum(fouls,na.rm=TRUE))
-test <- full_join(ind.player_sep,agg.player)
-test <- test %>% drop_na(team_id) %>% select(player_name,PF)
-agg.player$PF <- test$PF[match(agg.player$player_name,test$player_name)]
-  
 ##### Calculate additional team data
 agg.team$team_name <- trimws(agg.team$team_name)
 
@@ -319,7 +312,7 @@ rm(list = ls(pattern = "\\away"))
 # .x -> home team
 # .y -> opp team
 colnames(ind.team)[45:48] <- gsub("\\b.x","",colnames(ind.team)[45:48]) 
-colnames(ind.team)[87:88] <- paste0("opp_",gsub("\\b.y","",colnames(ind.team)[87:88]))
+colnames(ind.team)[84:88] <- paste0("opp_",gsub("\\b.y","",colnames(ind.team)[84:88]))
 
 ## Look for opponent stats
 home_agg_team_stats <- ind.team %>% group_by(team_id,opp_team_id) %>% filter(home == 1) %>% 
@@ -355,6 +348,7 @@ agg_team_stats <- agg_team_stats %>% group_by(team_id) %>%
 agg_team_stats_comb <- inner_join(home_agg_team_stats,away_agg_team_stats)
 agg_team_stats_comb <- inner_join(agg_team_stats_comb,agg_team_stats)
 
+agg_team_stats_comb$team_id <- as.numeric(agg_team_stats_comb$team_id)
 agg.team <- inner_join(agg.team,agg_team_stats_comb)
 
 rm(list = ls(pattern = "agg_team_stats"))
@@ -371,7 +365,10 @@ colnames(opp_home)[2:10] <- paste0("home_season_",colnames(opp_home)[2:10])
 colnames(opp_home)[1] <- "home_team_id"
 
 
+ind.game$away_team_id <- as.numeric(ind.game$away_team_id)
 ind.game <- inner_join(ind.game,opp_away)
+
+ind.game$home_team_id <- as.numeric(ind.game$home_team_id)
 ind.game <- inner_join(ind.game,opp_home)
 
 ## Save agg.team
