@@ -19,7 +19,7 @@ agg.team <- agg.team %>% mutate(
 ) %>% inner_join(.,team_spell,by=c("team_name_2"="TeamNameSpelling"))
 
 agg.team <- inner_join(agg.team,conf_team_dat,by="TeamID") %>% 
-  select(-c(team_name_2,team_name.y)) %>% rename(team_name=team_name.x)
+  select(-c(team_name_2,team_name.y)) %>% dplyr::rename(team_name=team_name.x)
 
 ind.team <- read_csv("raw_data/ind_team.csv")
 
@@ -53,12 +53,12 @@ ind.player <- read_csv("raw_data/ind_player.csv")
 detach("package:reshape", unload=TRUE)
 tm_mins_calc <- ind.player %>% group_by(team_id,game) %>% 
   mutate(tm_mins = sum(minutes,na.rm = TRUE)) %>% 
-  select(team_id,game,tm_mins) %>% distinct(game, .keep_all = TRUE) %>% 
+  select(team_id,game,tm_mins,game_date) %>% distinct(game, .keep_all = TRUE) %>% 
   rename(game_id = game) %>% ungroup() %>%  mutate(team_id = as.numeric(team_id))
 
 tm_mins_calc$team_id <- as.numeric(gsub(year_id,"",tm_mins_calc$team_id))
 
-ind.team <- inner_join(ind.team,tm_mins_calc) %>% select(-team_id,-opp_team_id)
+ind.team <- inner_join(ind.team,tm_mins_calc,by=c("team_id","game_date")) %>% select(-team_id,-opp_team_id) %>% select(-game_id.x) %>% dplyr::rename(game_id=game_id.y)
 
 ### Summarize the stats and add to the overall team dataframe
 #TS% = 0.5 x points/(FGA + 0.475 x FTA)
@@ -85,7 +85,7 @@ agg.team <- agg.team %>% mutate(
 #eFG% (FG + 0.5 * 3P) / FGA.
 agg.player <- agg.player %>% mutate(
   ts_pct = ((0.5 * pts)/(fga + 0.475 * fta)*100),
-  efg_pct = ((fgm + 0.5 * three_fgm)/fga)*100,
+  efg_pct = ((as.numeric(fgm) + 0.5 * three_fgm)/fga)*100,
   three_par = three_fga/fga
 )
 
@@ -134,7 +134,7 @@ round_df <- function(x, digits) {
   x
 }
 
-colnames(agg.team)[c(77:85)] <- paste0("team_",colnames(agg.team)[c(77:85)])
+colnames(agg.team)[c(79:88)] <- paste0("team_",colnames(agg.team)[c(79:88)])
 agg.player <- round_df(agg.player,2)
 ind.team <- round_df(ind.team,2)
 ind.player$fgm <- as.numeric(ind.player$fgm)

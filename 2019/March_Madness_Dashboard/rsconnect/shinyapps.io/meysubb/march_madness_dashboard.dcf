@@ -1,0 +1,10 @@
+name: march_madness_dashboard
+title:
+username:
+account: meysubb
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 297881
+bundleId: 1950823
+url: https://meysubb.shinyapps.io/March_Madness_Dashboard/
+when: 1553016684.28717
