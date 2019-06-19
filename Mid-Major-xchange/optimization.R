@@ -95,3 +95,5 @@ solution[which(solution!=0)]
 costs[which(solution!=0)]
 sum(solution[which(solution!=0)] * costs[which(solution!=0)])
 write.table(costs[which(solution!=0)],"example.xls")
+
+
